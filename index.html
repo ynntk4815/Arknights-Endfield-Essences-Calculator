@@ -52,9 +52,17 @@
 </head>
 <body class="bg-gray-50 min-h-screen">
     <div class="container mx-auto px-4 py-8">
-        <header class="mb-8 text-center">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">基质计算器</h1>
-            <p class="text-gray-600">选择目标武器，获取最优的淤积点和词条选择</p>
+        <header class="mb-8">
+            <div class="text-center mb-4">
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">基质计算器</h1>
+                <p class="text-gray-600">选择目标武器，获取最优的淤积点和词条选择</p>
+            </div>
+            <div class="max-w-md mx-auto">
+                <label for="main-weapon-select" class="block text-sm font-medium text-gray-700 mb-1">主刷武器（可选）</label>
+                <select id="main-weapon-select" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                    <option value="">-- 不指定主刷武器 --</option>
+                </select>
+            </div>
         </header>
 
         <div class="flex flex-col lg:flex-row gap-6">
@@ -242,6 +250,9 @@
             document.getElementById('calculate-btn').addEventListener('click', calculateOptimalCombinations);
         });
 
+        // 当前选中的主刷武器ID
+        let mainWeaponId = null;
+
         // 初始化筛选器
         function initializeFilters() {
             // 获取所有唯一的属性值
@@ -280,6 +291,35 @@
             baseFilter.addEventListener('change', renderWeaponSelection);
             additionalFilter.addEventListener('change', renderWeaponSelection);
             skillFilter.addEventListener('change', renderWeaponSelection);
+            
+            // 初始化主刷武器选择器
+            initializeMainWeaponSelector();
+        }
+
+        // 初始化主刷武器选择器
+        function initializeMainWeaponSelector() {
+            const mainWeaponSelect = document.getElementById('main-weapon-select');
+            
+            // 按稀有度和名称排序武器
+            const sortedWeapons = [...weapons].sort((a, b) => {
+                if (a.rarity !== b.rarity) {
+                    return b.rarity - a.rarity; // 6星在前，5星在后
+                }
+                return a.name.localeCompare(b.name);
+            });
+            
+            // 填充主刷武器选择器
+            sortedWeapons.forEach(weapon => {
+                const option = document.createElement('option');
+                option.value = weapon.id;
+                option.textContent = `${weapon.name} (${weapon.rarity}星 ${weapon.type})`;
+                mainWeaponSelect.appendChild(option);
+            });
+            
+            // 绑定主刷武器选择事件
+            mainWeaponSelect.addEventListener('change', function() {
+                mainWeaponId = this.value ? parseInt(this.value) : null;
+            });
         }
 
         // 渲染武器选择列表
@@ -433,8 +473,16 @@
                 allNodeResults = allNodeResults.concat(nodeResults);
             });
 
+            // 如果指定了主刷武器，只保留包含该武器的组合
+            let filteredResults = allNodeResults;
+            if (mainWeaponId) {
+                filteredResults = allNodeResults.filter(result => 
+                    result.matchedWeapons.some(weapon => weapon.id === mainWeaponId)
+                );
+            }
+            
             // 按得分降序排序并取前10个
-            calculationResults = allNodeResults
+            calculationResults = filteredResults
                 .sort((a, b) => b.score - a.score)
                 .slice(0, 10);
 
