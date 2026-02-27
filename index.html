@@ -164,6 +164,8 @@
                 browserLang.toLowerCase().includes('zh-sg') || 
                 browserLang.toLowerCase().includes('zh-my')) {
                 return 'zh-CN';
+            } else if (browserLang.toLowerCase().includes('zh-tw')) {
+                return 'zh-TW';
             }
 
             return 'zh-CN';
